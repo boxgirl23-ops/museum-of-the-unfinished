@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Museum of the Unfinished</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
+
+  :root{
+    --paper: #e9e3d2;
+    --paper-card: #f2ede0;
+    --paper-dark: #d9d0b8;
+    --ink: #262a26;
+    --ink-soft: #565b4f;
+    --forest: #2f4538;
+    --forest-deep: #1d2e24;
+    --rust: #9c4a2e;
+    --gold: #a47c1b;
+    --burgundy: #6b2737;
+    --slate: #3e5c76;
+    --rule: rgba(38,42,38,0.18);
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; background: var(--paper); color: var(--ink); font-family:'Fraunces',serif; min-height:100vh; }
+  button, input, select, textarea{ font-family:'Courier Prime',monospace; }
+  .hidden{ display:none !important; }
+
+  /* ---- LOGIN ---- */
+  #login-screen{ min-height:100vh; display:flex; align-items:center; justify-content:center; }
+  .login-box{ background:var(--forest-deep); color:var(--paper); padding:50px 44px; max-width:400px; width:90%; text-align:center; }
+  .login-box h1{ font-style:italic; font-weight:500; font-size:28px; margin:0 0 8px; }
+  .login-box p{ font-family:'Courier Prime',monospace; font-size:13px; color:#d7cfb4; margin:0 0 26px; }
+  .login-box input{ width:100%; padding:11px 12px; border:1px solid rgba(233,227,210,0.4); background:transparent; color:var(--paper); font-size:14px; margin-bottom:12px; }
+  .login-box input::placeholder{ color:#a79f86; }
+  .login-box button{ width:100%; padding:11px; background:var(--gold); color:var(--forest-deep); border:none; font-weight:700; font-size:13px; letter-spacing:.03em; cursor:pointer; }
+  .login-box button:hover{ opacity:.9; }
+  .login-msg{ margin-top:14px; font-family:'Courier Prime',monospace; font-size:12.5px; color:#cdbf8f; min-height:16px; }
+
+  /* ---- SHELL ---- */
+  #app{ max-width:920px; margin:0 auto; padding:0 24px 120px; }
+  .cover{ background:var(--forest-deep); color:var(--paper); padding:50px 30px 40px; text-align:center; margin:0 -24px 40px; position:relative; }
+  .cover h1{ font-size:clamp(30px,5vw,44px); font-style:italic; font-weight:500; margin:0 0 6px; }
+  .cover .sub{ font-family:'Courier Prime',monospace; font-size:13px; color:#d7cfb4; }
+  .topbar{ position:absolute; top:14px; right:18px; display:flex; gap:14px; align-items:center; }
+  .topbar button{ background:none; border:1px solid rgba(233,227,210,.4); color:var(--paper); font-size:11px; padding:6px 10px; cursor:pointer; }
+
+  section{ margin-bottom:56px; }
+  section h2{ font-style:italic; font-weight:500; font-size:23px; color:var(--forest-deep); margin:0 0 18px; }
+
+  /* ---- TODAY'S ENTRY ---- */
+  .spread{ display:grid; grid-template-columns:1fr 1fr; gap:0; background:var(--paper-card); border:1px solid var(--rule); }
+  .page{ padding:26px 26px; }
+  .page + .page{ border-left:1px dashed var(--rule); }
+  .prompt{ font-style:italic; font-size:17px; color:var(--forest-deep); margin:0 0 12px; }
+  textarea.entryfield{ width:100%; min-height:90px; border:none; background:transparent; resize:vertical; font-size:14px; line-height:1.7; color:var(--ink); outline:none; }
+  .refusal-box{ background:var(--paper-dark); border-left:3px solid var(--burgundy); padding:14px 16px; margin-top:16px; }
+  .refusal-box .label{ font-family:'Courier Prime',monospace; font-size:11px; color:var(--burgundy); margin-bottom:6px; }
+  .refusal-box textarea{ width:100%; min-height:60px; border:none; background:transparent; resize:vertical; font-size:13px; font-style:italic; outline:none; }
+  .save-note{ font-family:'Courier Prime',monospace; font-size:10.5px; color:var(--ink-soft); margin-top:6px; }
+  @media (max-width:640px){ .spread{ grid-template-columns:1fr; } .page+.page{ border-left:none; border-top:1px dashed var(--rule); } }
+
+  /* ---- ADD FORM ---- */
+  .add-form{ background:var(--paper-card); border:1px solid var(--rule); padding:20px; display:grid; gap:10px; grid-template-columns: 2fr 1fr 1fr; }
+  .add-form input[type=text]{ grid-column:1/2; padding:10px; border:1px solid var(--rule); background:var(--paper); font-size:14px; font-family:'Fraunces',serif; }
+  .add-form select, .add-form input[type=date]{ padding:9px; border:1px solid var(--rule); background:var(--paper); font-size:12.5px; }
+  .add-form button{ grid-column:1/-1; padding:10px; background:var(--forest); color:var(--paper); border:none; font-size:12.5px; letter-spacing:.03em; cursor:pointer; }
+  .add-form button:hover{ background:var(--forest-deep); }
+  @media (max-width:640px){ .add-form{ grid-template-columns:1fr 1fr; } .add-form input[type=text]{ grid-column:1/-1; } }
+
+  .filters{ display:flex; gap:10px; margin:14px 0 18px; flex-wrap:wrap; }
+  .filters select{ padding:6px 8px; border:1px solid var(--rule); background:var(--paper-card); font-size:12px; }
+
+  /* ---- BOARD ---- */
+  .board{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .drawer{ background:var(--paper-dark); border-top:3px solid var(--forest); padding:14px 12px 18px; min-height:120px; }
+  .drawer[data-status="Under Observation"]{ border-top-color:var(--rust); }
+  .drawer[data-status="Filed"]{ border-top-color:var(--gold); }
+  .drawer[data-status="Released"]{ border-top-color:var(--ink-soft); opacity:.9; }
+  .drawer h3{ font-family:'Courier Prime',monospace; font-size:11px; font-weight:700; margin:0 0 10px; letter-spacing:.02em; }
+  .card{ background:var(--paper-card); border:1px solid var(--rule); padding:10px 11px; margin-bottom:8px; cursor:pointer; }
+  .card:hover{ border-color:var(--forest); }
+  .card p{ margin:0 0 6px; font-size:13.5px; line-height:1.4; }
+  .card-tags{ display:flex; gap:6px; flex-wrap:wrap; font-family:'Courier Prime',monospace; font-size:9.5px; }
+  .tag{ padding:2px 6px; color:var(--paper); }
+  .tag.domain-WORK{ background:var(--forest); } .tag.domain-HOUSE{ background:var(--rust); }
+  .tag.domain-HOME{ background:var(--gold); color:var(--forest-deep); } .tag.domain-KIDS{ background:var(--slate); }
+  .tag.domain-PERSONAL{ background:var(--burgundy); }
+  .tag.lens{ background:transparent; border:1px solid var(--ink-soft); color:var(--ink-soft); }
+  @media (max-width:760px){ .board{ grid-template-columns:1fr 1fr; } }
+
+  /* ---- MODAL ---- */
+  #modal-backdrop{ position:fixed; inset:0; background:rgba(29,46,36,.5); display:flex; align-items:center; justify-content:center; padding:20px; z-index:50; }
+  #modal{ background:var(--paper); max-width:520px; width:100%; max-height:85vh; overflow:auto; padding:26px; border:1px solid var(--rule); }
+  #modal h3{ margin:0 0 14px; font-style:italic; font-size:20px; }
+  #modal label{ display:block; font-family:'Courier Prime',monospace; font-size:11px; color:var(--ink-soft); margin:14px 0 4px; }
+  #modal input, #modal select, #modal textarea{ width:100%; padding:8px; border:1px solid var(--rule); background:var(--paper-card); font-size:13.5px; }
+  #modal textarea{ min-height:60px; resize:vertical; font-family:'Fraunces',serif; }
+  #modal-actions{ display:flex; justify-content:space-between; margin-top:20px; }
+  #modal-actions button{ padding:9px 14px; border:none; cursor:pointer; font-size:12px; }
+  #modal-save{ background:var(--forest); color:var(--paper); }
+  #modal-delete{ background:transparent; color:var(--burgundy); border:1px solid var(--burgundy) !important; }
+  #modal-close{ background:none; border:none; float:right; font-size:18px; cursor:pointer; color:var(--ink-soft); }
+
+  .rhythm{ background:var(--forest-deep); color:var(--paper); padding:26px 28px; }
+  .rhythm p{ font-family:'Courier Prime',monospace; font-size:13px; color:#d7cfb4; line-height:1.7; }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <h1>Museum of the Unfinished</h1>
+    <p>a field log, not a to-do list</p>
+    <input type="email" id="login-email" placeholder="you@email.com">
+    <button id="login-btn">Send me a link</button>
+    <div class="login-msg" id="login-msg"></div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="cover">
+    <div class="topbar"><button id="logout-btn">Sign out</button></div>
+    <h1>Museum of the Unfinished</h1>
+    <div class="sub">a field log, not a to-do list</div>
+  </div>
+
+  <section>
+    <h2>Today's entry</h2>
+    <div class="spread">
+      <div class="page">
+        <p class="prompt" id="prompt-text"></p>
+        <textarea class="entryfield" id="entry-response" placeholder="[space to write]"></textarea>
+        <div class="save-note" id="entry-save-note">&nbsp;</div>
+      </div>
+      <div class="page">
+        <div class="refusal-box">
+          <div class="label">why I shouldn't do this today</div>
+          <textarea id="entry-whynot" placeholder="allowed to just stand, some days"></textarea>
+        </div>
+        <label style="font-family:'Courier Prime',monospace;font-size:11px;color:var(--ink-soft);display:block;margin-top:16px;">noticing</label>
+        <textarea class="entryfield" id="entry-noticing" placeholder="[space to write]" style="min-height:60px;"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The dump</h2>
+    <div class="add-form">
+      <input type="text" id="new-name" placeholder="what's been noticed...">
+      <select id="new-domain">
+        <option value="">Domain</option>
+        <option>WORK</option><option>HOUSE</option><option>HOME</option><option>KIDS</option><option>PERSONAL</option>
+      </select>
+      <select id="new-type"><option value="">Type</option></select>
+      <button id="add-btn">drop it in</button>
+    </div>
+
+    <div class="filters">
+      <select id="filter-domain"><option value="">All domains</option><option>WORK</option><option>HOUSE</option><option>HOME</option><option>KIDS</option><option>PERSONAL</option></select>
+      <select id="filter-lens"><option value="">All lenses</option><option>Payments Due</option><option>Provisions — Larder</option><option>Provisions — Stores</option></select>
+    </div>
+
+    <div class="board" id="board"></div>
+  </section>
+
+  <div class="rhythm">
+    <p>No clock time — tied to something that already happens: kettle boiling, school run, dog walk.<br>No calendar alerts. A short, odd, variably-timed nudge instead — rotated, never repeated two days running.</p>
+  </div>
+</div>
+
+<div id="modal-backdrop" class="hidden">
+  <div id="modal">
+    <button id="modal-close">&times;</button>
+    <h3>Edit item</h3>
+    <label>Name</label><input id="m-name">
+    <label>Domain</label><select id="m-domain"><option value="">—</option><option>WORK</option><option>HOUSE</option><option>HOME</option><option>KIDS</option><option>PERSONAL</option></select>
+    <label>Type</label><select id="m-type"><option value="">—</option></select>
+    <label>Status</label>
+    <select id="m-status"><option>Unclaimed</option><option>Under Observation</option><option>Filed</option><option>Released</option></select>
+    <label>Lens</label>
+    <select id="m-lens"><option value="">none</option><option>Payments Due</option><option>Provisions — Larder</option><option>Provisions — Stores</option></select>
+    <label>Due date</label><input type="date" id="m-due">
+    <label>Notes / steps</label><textarea id="m-notes" placeholder="steps, context, anything"></textarea>
+    <div id="modal-actions">
+      <button id="modal-delete">delete</button>
+      <button id="modal-save">save</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://jzlkknxivlxhjneqwrgx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_rwdhrOv5yoi9XEVwYAKhsA_5QVDb8LQ';
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const TYPES = {
+  WORK: ['Jobs','Research'],
+  HOUSE: ['Projects','Maintenance'],
+  HOME: ['Needs'],
+  KIDS: ['School & EC Admin','Growth','Wish List'],
+  PERSONAL: ['Space']
+};
+
+const PROMPTS = [
+  "What's been sitting in the corner of the room, watching you?",
+  "What would you rescue if the house quietly caught fire, and what would you let burn?",
+  "Name one thing you'd be relieved to never think about again.",
+  "What are you protecting by not doing this?"
+];
+
+let currentEntryId = null;
+let editingItemId = null;
+let saveTimer = null;
+
+// ---------- AUTH ----------
+document.getElementById('login-btn').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const msg = document.getElementById('login-msg');
+  if(!email){ msg.textContent = 'enter an email first'; return; }
+  msg.textContent = 'sending...';
+  const { error } = await supabase.auth.signInWithOtp({ email, options:{ emailRedirectTo: window.location.origin } });
+  msg.textContent = error ? error.message : 'check your email for the link';
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  window.location.reload();
+});
+
+supabase.auth.onAuthStateChange((event, session) => {
+  if(session){ showApp(); } else { showLogin(); }
+});
+
+async function init(){
+  const { data:{ session } } = await supabase.auth.getSession();
+  if(session){ showApp(); } else { showLogin(); }
+}
+
+function showLogin(){
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+}
+
+async function showApp(){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  populateTypeSelect(document.getElementById('new-type'));
+  populateTypeSelect(document.getElementById('m-type'));
+  await loadTodayEntry();
+  await loadItems();
+}
+
+function populateTypeSelect(sel){
+  sel.innerHTML = '<option value="">Type</option>';
+}
+
+document.getElementById('new-domain').addEventListener('change', (e) => {
+  const sel = document.getElementById('new-type');
+  sel.innerHTML = '<option value="">Type</option>';
+  (TYPES[e.target.value]||[]).forEach(t => sel.innerHTML += `<option>${t}</option>`);
+});
+document.getElementById('m-domain').addEventListener('change', (e) => {
+  const sel = document.getElementById('m-type');
+  sel.innerHTML = '<option value="">—</option>';
+  (TYPES[e.target.value]||[]).forEach(t => sel.innerHTML += `<option>${t}</option>`);
+});
+
+// ---------- TODAY'S ENTRY ----------
+async function loadTodayEntry(){
+  const today = new Date().toISOString().slice(0,10);
+  let { data, error } = await supabase.from('field_entries').select('*').eq('entry_date', today).limit(1);
+  let entry = data && data[0];
+  if(!entry){
+    const prompt = PROMPTS[Math.floor(Math.random()*PROMPTS.length)];
+    const { data: created } = await supabase.from('field_entries').insert({ entry_date: today, prompt }).select().single();
+    entry = created;
+  }
+  currentEntryId = entry.id;
+  document.getElementById('prompt-text').textContent = entry.prompt;
+  document.getElementById('entry-response').value = entry.response || '';
+  document.getElementById('entry-whynot').value = entry.why_not || '';
+  document.getElementById('entry-noticing').value = entry.noticing || '';
+}
+
+['entry-response','entry-whynot','entry-noticing'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    clearTimeout(saveTimer);
+    document.getElementById('entry-save-note').textContent = 'writing...';
+    saveTimer = setTimeout(saveEntry, 800);
+  });
+});
+
+async function saveEntry(){
+  await supabase.from('field_entries').update({
+    response: document.getElementById('entry-response').value,
+    why_not: document.getElementById('entry-whynot').value,
+    noticing: document.getElementById('entry-noticing').value
+  }).eq('id', currentEntryId);
+  document.getElementById('entry-save-note').textContent = 'saved';
+  setTimeout(()=>{ document.getElementById('entry-save-note').textContent=''; }, 1500);
+}
+
+// ---------- ITEMS ----------
+async function loadItems(){
+  let query = supabase.from('field_log').select('*').order('created_at', { ascending:false });
+  const domain = document.getElementById('filter-domain').value;
+  const lens = document.getElementById('filter-lens').value;
+  if(domain) query = query.eq('domain', domain);
+  if(lens) query = query.eq('lens', lens);
+  const { data, error } = await query;
+  renderBoard(data || []);
+}
+document.getElementById('filter-domain').addEventListener('change', loadItems);
+document.getElementById('filter-lens').addEventListener('change', loadItems);
+
+function renderBoard(items){
+  const statuses = ['Unclaimed','Under Observation','Filed','Released'];
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  statuses.forEach(status => {
+    const drawer = document.createElement('div');
+    drawer.className = 'drawer';
+    drawer.dataset.status = status;
+    drawer.innerHTML = `<h3>${status.toLowerCase()}</h3>`;
+    items.filter(i => (i.status||'Unclaimed') === status).forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<p>${escapeHtml(item.name)}</p>
+        <div class="card-tags">
+          ${item.domain ? `<span class="tag domain-${item.domain}">${item.domain}</span>`:''}
+          ${item.lens ? `<span class="tag lens">${item.lens}</span>`:''}
+        </div>`;
+      card.addEventListener('click', () => openModal(item));
+      drawer.appendChild(card);
+    });
+    board.appendChild(drawer);
+  });
+}
+
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+document.getElementById('add-btn').addEventListener('click', async () => {
+  const name = document.getElementById('new-name').value.trim();
+  if(!name) return;
+  const domain = document.getElementById('new-domain').value;
+  const type = document.getElementById('new-type').value;
+  await supabase.from('field_log').insert({ name, domain: domain||null, type: type||null, status:'Unclaimed' });
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-domain').value = '';
+  document.getElementById('new-type').innerHTML = '<option value="">Type</option>';
+  loadItems();
+});
+
+// ---------- MODAL ----------
+function openModal(item){
+  editingItemId = item.id;
+  document.getElementById('m-name').value = item.name || '';
+  document.getElementById('m-domain').value = item.domain || '';
+  document.getElementById('m-domain').dispatchEvent(new Event('change'));
+  document.getElementById('m-type').value = item.type || '';
+  document.getElementById('m-status').value = item.status || 'Unclaimed';
+  document.getElementById('m-lens').value = item.lens || '';
+  document.getElementById('m-due').value = item.due_date || '';
+  document.getElementById('m-notes').value = item.notes || '';
+  document.getElementById('modal-backdrop').classList.remove('hidden');
+}
+document.getElementById('modal-close').addEventListener('click', () => document.getElementById('modal-backdrop').classList.add('hidden'));
+document.getElementById('modal-backdrop').addEventListener('click', (e) => { if(e.target.id==='modal-backdrop') e.currentTarget.classList.add('hidden'); });
+
+document.getElementById('modal-save').addEventListener('click', async () => {
+  await supabase.from('field_log').update({
+    name: document.getElementById('m-name').value,
+    domain: document.getElementById('m-domain').value || null,
+    type: document.getElementById('m-type').value || null,
+    status: document.getElementById('m-status').value,
+    lens: document.getElementById('m-lens').value || null,
+    due_date: document.getElementById('m-due').value || null,
+    notes: document.getElementById('m-notes').value
+  }).eq('id', editingItemId);
+  document.getElementById('modal-backdrop').classList.add('hidden');
+  loadItems();
+});
+
+document.getElementById('modal-delete').addEventListener('click', async () => {
+  await supabase.from('field_log').delete().eq('id', editingItemId);
+  document.getElementById('modal-backdrop').classList.add('hidden');
+  loadItems();
+});
+
+init();
+</script>
+</body>
+</html>

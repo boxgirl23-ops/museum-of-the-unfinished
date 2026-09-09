@@ -47,7 +47,23 @@
   .topbar button{ background:none; border:1px solid rgba(233,227,210,.4); color:var(--paper); font-size:11px; padding:6px 10px; cursor:pointer; }
 
   section{ margin-bottom:56px; }
-  section h2{ font-style:italic; font-weight:500; font-size:23px; color:var(--forest-deep); margin:0 0 18px; }
+  .section-label{ font-family:'Courier Prime',monospace; font-size:12px; color:var(--ink-soft); margin-bottom:5px; }
+  section h2{ font-style:italic; font-weight:500; font-size:23px; color:var(--forest-deep); margin:0 0 6px; }
+  section .section-desc{ font-size:14px; color:var(--ink-soft); max-width:520px; line-height:1.55; margin:0 0 22px; }
+
+  .view-toggle{ display:flex; gap:0; margin:0 0 16px; border:1px solid var(--forest); width:fit-content; }
+  .view-toggle button{ padding:6px 16px; background:var(--paper); border:none; font-size:11.5px; letter-spacing:.03em; cursor:pointer; color:var(--forest); }
+  .view-toggle button.active{ background:var(--forest); color:var(--paper); }
+
+  .list-view{ background:var(--paper-card); border:1px solid var(--rule); }
+  .list-view table{ width:100%; border-collapse:collapse; }
+  .list-view th{ text-align:left; font-family:'Courier Prime',monospace; font-size:10.5px; letter-spacing:.03em; color:var(--ink-soft); padding:10px 12px; border-bottom:1px solid var(--rule); cursor:pointer; user-select:none; }
+  .list-view th:hover{ color:var(--forest-deep); }
+  .list-view td{ padding:10px 12px; border-bottom:1px solid var(--rule); font-size:13.5px; }
+  .list-view tr:last-child td{ border-bottom:none; }
+  .list-view tr.data-row{ cursor:pointer; }
+  .list-view tr.data-row:hover{ background:var(--paper-dark); }
+  .list-view .empty-row td{ color:var(--ink-soft); font-style:italic; font-family:'Courier Prime',monospace; font-size:12px; padding:16px 12px; }
 
   /* ---- TODAY'S ENTRY ---- */
   .spread{ display:grid; grid-template-columns:1fr 1fr; gap:0; background:var(--paper-card); border:1px solid var(--rule); }
@@ -127,7 +143,9 @@
   </div>
 
   <section>
+    <div class="section-label">01 — before anything else</div>
     <h2>Today's entry</h2>
+    <p class="section-desc">The front door. Write here first — before the list is even visible.</p>
     <div class="spread">
       <div class="page">
         <p class="prompt" id="prompt-text"></p>
@@ -146,7 +164,9 @@
   </section>
 
   <section>
+    <div class="section-label">02 — once it feels possible</div>
     <h2>The dump</h2>
+    <p class="section-desc">Everything gets in, unsorted, in whatever order it arrives.</p>
     <div class="add-form">
       <input type="text" id="new-name" placeholder="what's been noticed...">
       <select id="new-domain">
@@ -157,12 +177,35 @@
       <button id="add-btn">drop it in</button>
     </div>
 
+    <div class="section-label" style="margin-top:34px;">03 — where things live</div>
+    <h2>The specimen board</h2>
+    <p class="section-desc">No "done / not done." Four honest states — including one where deciding not to do something is a completed action, not an unfinished one.</p>
+
     <div class="filters">
       <select id="filter-domain"><option value="">All domains</option><option>WORK</option><option>HOUSE</option><option>HOME</option><option>KIDS</option><option>PERSONAL</option></select>
       <select id="filter-lens"><option value="">All lenses</option><option>Payments Due</option><option>Provisions — Larder</option><option>Provisions — Stores</option></select>
+      <div class="view-toggle">
+        <button id="view-board-btn" class="active">Board</button>
+        <button id="view-list-btn">List</button>
+      </div>
     </div>
 
     <div class="board" id="board"></div>
+    <div class="list-view hidden" id="list-view">
+      <table>
+        <thead>
+          <tr>
+            <th data-sort="name">Name</th>
+            <th data-sort="domain">Domain</th>
+            <th data-sort="type">Type</th>
+            <th data-sort="status">Status</th>
+            <th data-sort="lens">Lens</th>
+            <th data-sort="due_date">Due</th>
+          </tr>
+        </thead>
+        <tbody id="list-body"></tbody>
+      </table>
+    </div>
   </section>
 
   <div class="rhythm">
@@ -215,6 +258,10 @@ const PROMPTS = [
 let currentEntryId = null;
 let editingItemId = null;
 let saveTimer = null;
+let viewMode = 'board';
+let currentItems = [];
+let sortKey = 'name';
+let sortAsc = true;
 
 // ---------- AUTH ----------
 document.getElementById('login-btn').addEventListener('click', async () => {
@@ -312,10 +359,61 @@ async function loadItems(){
   if(domain) query = query.eq('domain', domain);
   if(lens) query = query.eq('lens', lens);
   const { data, error } = await query;
-  renderBoard(data || []);
+  currentItems = data || [];
+  renderBoard(currentItems);
+  renderList(currentItems);
 }
 document.getElementById('filter-domain').addEventListener('change', loadItems);
 document.getElementById('filter-lens').addEventListener('change', loadItems);
+
+document.getElementById('view-board-btn').addEventListener('click', () => setView('board'));
+document.getElementById('view-list-btn').addEventListener('click', () => setView('list'));
+
+function setView(mode){
+  viewMode = mode;
+  document.getElementById('view-board-btn').classList.toggle('active', mode==='board');
+  document.getElementById('view-list-btn').classList.toggle('active', mode==='list');
+  document.getElementById('board').classList.toggle('hidden', mode!=='board');
+  document.getElementById('list-view').classList.toggle('hidden', mode!=='list');
+}
+
+document.querySelectorAll('.list-view th').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    if(sortKey === key){ sortAsc = !sortAsc; } else { sortKey = key; sortAsc = true; }
+    renderList(currentItems);
+  });
+});
+
+function renderList(items){
+  const body = document.getElementById('list-body');
+  const sorted = [...items].sort((a,b) => {
+    const av = (a[sortKey]||'').toString().toLowerCase();
+    const bv = (b[sortKey]||'').toString().toLowerCase();
+    if(av < bv) return sortAsc ? -1 : 1;
+    if(av > bv) return sortAsc ? 1 : -1;
+    return 0;
+  });
+  if(sorted.length === 0){
+    body.innerHTML = '<tr class="empty-row"><td colspan="6">nothing here yet</td></tr>';
+    return;
+  }
+  body.innerHTML = sorted.map(item => `
+    <tr class="data-row" data-id="${item.id}">
+      <td>${escapeHtml(item.name)}</td>
+      <td>${item.domain ? `<span class="tag domain-${item.domain}">${item.domain}</span>` : ''}</td>
+      <td>${item.type || ''}</td>
+      <td>${item.status || 'Unclaimed'}</td>
+      <td>${item.lens || ''}</td>
+      <td>${item.due_date || ''}</td>
+    </tr>`).join('');
+  body.querySelectorAll('tr.data-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const item = currentItems.find(i => i.id === row.dataset.id);
+      if(item) openModal(item);
+    });
+  });
+}
 
 function renderBoard(items){
   const statuses = ['Unclaimed','Under Observation','Filed','Released'];
